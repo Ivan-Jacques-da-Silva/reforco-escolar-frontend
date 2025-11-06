@@ -28,6 +28,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Students from "./pages/Students";
+import Tutorings from "./pages/Tutorings";
+import Materials from "./pages/Materials";
+import Payments from "./pages/Payments";
 
 // =====================================================
 // Reforço Escolar — UI clara (sem degradê / sem cores escuras)
@@ -73,7 +76,7 @@ const menu = [
   { chave: "alunos", titulo: "Alunos", icone: Users },
   { chave: "reforcos", titulo: "Reforços", icone: BookOpen },
   { chave: "materiais", titulo: "Materiais", icone: Boxes },
-  { chave: "financeiro-aluno", titulo: "Financeiro (Aluno)", icone: CreditCard },
+  { chave: "financeiro-aluno", titulo: "Pagamentos", icone: CreditCard },
   { chave: "financeiro-empresa", titulo: "Financeiro (Empresa)", icone: Banknote },
   { chave: "relatorios", titulo: "Relatórios", icone: BarChart3 },
   { chave: "config", titulo: "Configurações", icone: Settings },
@@ -213,10 +216,6 @@ function SecaoVisaoGeral() {
             <p className="mt-2 text-sm text-muted-foreground max-w-prose">
               Visão geral do dia, status de cobranças e estoque — tudo em um só lugar.
             </p>
-            <div className="mt-4 flex gap-2">
-              <Button className="rounded-xl bg-sky-500 hover:bg-sky-600">Nova ação</Button>
-              <Button variant="outline" className="rounded-xl">Ajuda</Button>
-            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <CartaoKPI titulo="Alunos ativos" valor={ativos} subtitulo="no período" destaque />
@@ -270,149 +269,15 @@ function SecaoAlunos() {
 }
 
 function SecaoReforcos() {
-  return (
-    <div className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-lg font-semibold">Agenda de reforços</div>
-          <div className="text-sm text-muted-foreground">Gerencie aulas, pacotes e conteúdos</div>
-        </div>
-        <Button className="gap-2 rounded-xl bg-sky-500 hover:bg-sky-600"><Plus className="h-4 w-4" /> Nova aula</Button>
-      </div>
-
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b bg-slate-50">
-          <CardTitle>Próximas aulas</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Disciplina</TableHead>
-                <TableHead>Assunto</TableHead>
-                <TableHead>Próxima aula</TableHead>
-                <TableHead>Plano</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dadosReforcosExemplo.map((r) => (
-                <TableRow key={r.id} className="hover:bg-slate-50/80">
-                  <TableCell className="font-medium">{r.aluno}</TableCell>
-                  <TableCell>{r.disciplina}</TableCell>
-                  <TableCell>{r.assunto}</TableCell>
-                  <TableCell>{r.proximaAula}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{r.plano}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <Tutorings />;
 }
 
 function SecaoMateriais() {
-  return (
-    <div className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-lg font-semibold">Estoque de materiais</div>
-          <div className="text-sm text-muted-foreground">Itens escolares e insumos</div>
-        </div>
-        <Button className="gap-2 rounded-xl bg-sky-500 hover:bg-sky-600"><Plus className="h-4 w-4" /> Novo item</Button>
-      </div>
-
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b bg-slate-50">
-          <CardTitle>Itens cadastrados</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Qtd.</TableHead>
-                <TableHead>Mínimo</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dadosMateriaisExemplo.map((m) => {
-                const critico = m.quantidade <= m.minimo;
-                return (
-                  <TableRow key={m.sku} className="hover:bg-slate-50/80">
-                    <TableCell className="font-mono text-xs">{m.sku}</TableCell>
-                    <TableCell className="font-medium">{m.nome}</TableCell>
-                    <TableCell>{m.quantidade}</TableCell>
-                    <TableCell>{m.minimo}</TableCell>
-                    <TableCell>
-                      {critico ? (
-                        <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3"/> Repor</Badge>
-                      ) : (
-                        <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1"><CheckCircle2 className="h-3 w-3"/> OK</Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <Materials />;
 }
 
 function SecaoFinanceiroAluno() {
-  return (
-    <div className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-lg font-semibold">Cobranças (Gateway CORA)</div>
-          <div className="text-sm text-muted-foreground">Simulação de integração</div>
-        </div>
-        <Button className="gap-2 rounded-xl bg-sky-500 hover:bg-sky-600"><Receipt className="h-4 w-4" /> Gerar cobrança</Button>
-      </div>
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b bg-slate-50">
-          <CardTitle>Mensalidades</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Referência</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Gateway</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dadosCobrancasAlunoExemplo.map((c) => (
-                <TableRow key={c.id} className="hover:bg-slate-50/80">
-                  <TableCell className="font-medium">{c.aluno}</TableCell>
-                  <TableCell>{c.referencia}</TableCell>
-                  <TableCell>R$ {c.valor.toFixed(2)}</TableCell>
-                  <TableCell>
-                    {c.status === "pago" && <Badge className="bg-emerald-600 hover:bg-emerald-600">Pago</Badge>}
-                    {c.status === "pendente" && <Badge className="bg-amber-500 hover:bg-amber-500">Pendente</Badge>}
-                    {c.status === "em_processamento" && <Badge variant="secondary">Processando</Badge>}
-                  </TableCell>
-                  <TableCell><Badge variant="outline">{c.gateway}</Badge></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <Payments />;
 }
 
 function SecaoFinanceiroEmpresa() {
@@ -541,17 +406,13 @@ export default function Dashboard({ user, onLogout }) {
           <motion.header
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-6"
+            className="mb-6"
           >
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
                 {menu.find(m => m.chave === aba)?.titulo}
               </h1>
-              <p className="text-sm text-muted-foreground">Somente front-end (dados fictícios)</p>
-            </div>
-            <div className="hidden md:flex gap-2">
-              <Button variant="outline" className="rounded-xl">Ajuda</Button>
-              <Button className="rounded-xl bg-sky-500 hover:bg-sky-600">Nova ação</Button>
+              <p className="text-sm text-muted-foreground">Gerencie seus dados de forma eficiente</p>
             </div>
           </motion.header>
 

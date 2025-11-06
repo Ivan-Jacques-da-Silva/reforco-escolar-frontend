@@ -16,7 +16,7 @@ model User {
   email     String   @unique
   password  String
   name      String?
-  role      Role     @default(TEACHER)
+  role      String   @default("TEACHER")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -48,7 +48,7 @@ model Student {
   email       String?
   phone       String?
   grade       String   // Série escolar
-  status      StudentStatus @default(ACTIVE)
+  status      String   @default("ACTIVE")
   monthlyFee  Float    @default(149.90)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -70,7 +70,7 @@ model Tutoring {
   topic       String   // Assunto específico
   plan        String   // Tipo de plano (pacote, avulsa)
   nextClass   DateTime?
-  status      TutoringStatus @default(SCHEDULED)
+  status      String   @default("SCHEDULED")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -99,7 +99,7 @@ model Payment {
   studentId   String
   reference   String   // Referência do pagamento (ex: "Mensalidade 09/2025")
   amount      Float
-  status      PaymentStatus @default(PENDING)
+  status      String   @default("PENDING")
   gateway     String?  @default("CORA")
   dueDate     DateTime?
   paidAt      DateTime?
@@ -110,29 +110,4 @@ model Payment {
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("payments")
-}
-
-// Enums
-enum Role {
-  ADMIN
-  TEACHER
-}
-
-enum StudentStatus {
-  ACTIVE
-  INACTIVE
-  PENDING
-}
-
-enum TutoringStatus {
-  SCHEDULED
-  COMPLETED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  OVERDUE
-  CANCELLED
 }

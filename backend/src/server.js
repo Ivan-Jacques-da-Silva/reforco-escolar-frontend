@@ -13,6 +13,9 @@ const paymentRoutes = require('./routes/payments');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configurar trust proxy para Replit
+app.set('trust proxy', 1);
+
 // Middlewares de segurança
 app.use(helmet());
 
@@ -28,7 +31,7 @@ app.use(limiter);
 
 // CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || true,
   credentials: true
 }));
 

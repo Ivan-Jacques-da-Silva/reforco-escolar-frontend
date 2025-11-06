@@ -1,6 +1,6 @@
 const express = require('express');
 const { prisma } = require('../config/database');
-const { authenticateToken, canAccessStudent } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -32,12 +32,12 @@ router.get('/', authenticateToken, async (req, res) => {
 
     // Filtro por período
     if (startDate || endDate) {
-      where.scheduledAt = {};
+      where.nextClass = {};
       if (startDate) {
-        where.scheduledAt.gte = new Date(startDate);
+        where.nextClass.gte = new Date(startDate);
       }
       if (endDate) {
-        where.scheduledAt.lte = new Date(endDate);
+        where.nextClass.lte = new Date(endDate);
       }
     }
 
@@ -57,7 +57,7 @@ router.get('/', authenticateToken, async (req, res) => {
             }
           }
         },
-        orderBy: { scheduledAt: 'desc' }
+        orderBy: { createdAt: 'desc' }
       }),
       prisma.tutoring.count({ where })
     ]);
@@ -134,16 +134,16 @@ router.post('/', authenticateToken, async (req, res) => {
     const {
       studentId,
       subject,
-      description,
-      scheduledAt,
-      duration,
-      price
+      topic,
+      plan,
+      nextClass,
+      status
     } = req.body;
 
     // Validações
-    if (!studentId || !subject || !scheduledAt) {
+    if (!studentId || !subject || !topic || !plan) {
       return res.status(400).json({
-        error: 'Aluno, matéria e data são obrigatórios'
+        error: 'Aluno, disciplina, assunto e plano são obrigatórios'
       });
     }
 
@@ -175,10 +175,10 @@ router.post('/', authenticateToken, async (req, res) => {
       data: {
         studentId,
         subject,
-        description,
-        scheduledAt: new Date(scheduledAt),
-        duration: duration || 60, // padrão 60 minutos
-        price: price || 0
+        topic,
+        plan,
+        nextClass: nextClass ? new Date(nextClass) : null,
+        status: status || 'SCHEDULED'
       },
       include: {
         student: {
@@ -211,12 +211,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const {
       subject,
-      description,
-      scheduledAt,
-      duration,
-      price,
-      status,
-      notes
+      topic,
+      plan,
+      nextClass,
+      status
     } = req.body;
 
     // Verificar se o reforço existe e se o usuário pode acessá-lo
@@ -247,12 +245,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
     // Preparar dados para atualização
     const updateData = {};
     if (subject) updateData.subject = subject;
-    if (description) updateData.description = description;
-    if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt);
-    if (duration) updateData.duration = duration;
-    if (price !== undefined) updateData.price = price;
+    if (topic) updateData.topic = topic;
+    if (plan) updateData.plan = plan;
+    if (nextClass !== undefined) updateData.nextClass = nextClass ? new Date(nextClass) : null;
     if (status) updateData.status = status;
-    if (notes) updateData.notes = notes;
 
     // Atualizar reforço
     const tutoring = await prisma.tutoring.update({
@@ -289,7 +285,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Verificar se o reforço existe e se o usuário pode acessá-lo
-    const tutoring = await prisma.tutoring.findUnique({
+    const existingTutoring = await prisma.tutoring.findUnique({
       where: { id },
       include: {
         student: {
@@ -300,14 +296,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       }
     });
 
-    if (!tutoring) {
+    if (!existingTutoring) {
       return res.status(404).json({
         error: 'Reforço não encontrado'
       });
     }
 
     // Verificar permissões
-    if (req.user.role !== 'ADMIN' && tutoring.student.teacherId !== req.user.id) {
+    if (req.user.role !== 'ADMIN' && existingTutoring.student.teacherId !== req.user.id) {
       return res.status(403).json({
         error: 'Acesso negado'
       });
@@ -361,13 +357,11 @@ router.patch('/:id/complete', authenticateToken, async (req, res) => {
       });
     }
 
-    // Atualizar status para concluído
+    // Marcar como concluído
     const tutoring = await prisma.tutoring.update({
       where: { id },
       data: {
-        status: 'COMPLETED',
-        notes,
-        completedAt: new Date()
+        status: 'COMPLETED'
       },
       include: {
         student: {
@@ -387,7 +381,7 @@ router.patch('/:id/complete', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao concluir reforço:', error);
+    console.error('Erro ao marcar reforço como concluído:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

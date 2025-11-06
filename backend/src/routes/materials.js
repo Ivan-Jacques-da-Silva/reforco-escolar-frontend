@@ -7,32 +7,17 @@ const router = express.Router();
 // Listar materiais
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, subject, type } = req.query;
+    const { page = 1, limit = 10, search } = req.query;
     const skip = (page - 1) * limit;
 
     // Construir filtros
     const where = {};
     
-    // Se não for admin, filtrar apenas materiais criados pelo professor
-    if (req.user.role !== 'ADMIN') {
-      where.createdById = req.user.id;
-    }
-
-    // Filtro por matéria
-    if (subject) {
-      where.subject = { contains: subject, mode: 'insensitive' };
-    }
-
-    // Filtro por tipo
-    if (type) {
-      where.type = type;
-    }
-
-    // Filtro por busca (título ou descrição)
+    // Filtro por busca (SKU ou nome)
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { sku: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } }
       ];
     }
 
@@ -42,15 +27,6 @@ router.get('/', authenticateToken, async (req, res) => {
         where,
         skip: parseInt(skip),
         take: parseInt(limit),
-        include: {
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        },
         orderBy: { createdAt: 'desc' }
       }),
       prisma.material.count({ where })
@@ -80,28 +56,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     const material = await prisma.material.findUnique({
-      where: { id },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
+      where: { id }
     });
 
     if (!material) {
       return res.status(404).json({
         error: 'Material não encontrado'
-      });
-    }
-
-    // Verificar se o usuário pode acessar este material
-    if (req.user.role !== 'ADMIN' && material.createdById !== req.user.id) {
-      return res.status(403).json({
-        error: 'Acesso negado'
       });
     }
 
@@ -119,42 +79,37 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const {
-      title,
-      description,
-      subject,
-      type,
-      content,
-      fileUrl,
-      tags
+      sku,
+      name,
+      quantity,
+      minimum
     } = req.body;
 
     // Validações
-    if (!title || !subject || !type) {
+    if (!sku || !name) {
       return res.status(400).json({
-        error: 'Título, matéria e tipo são obrigatórios'
+        error: 'SKU e nome são obrigatórios'
+      });
+    }
+
+    // Verificar se já existe um material com este SKU
+    const existingMaterial = await prisma.material.findUnique({
+      where: { sku }
+    });
+
+    if (existingMaterial) {
+      return res.status(400).json({
+        error: 'Já existe um material com este SKU'
       });
     }
 
     // Criar material
     const material = await prisma.material.create({
       data: {
-        title,
-        description,
-        subject,
-        type,
-        content,
-        fileUrl,
-        tags: tags || [],
-        createdById: req.user.id
-      },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+        sku,
+        name,
+        quantity: quantity || 0,
+        minimum: minimum || 10
       }
     });
 
@@ -176,16 +131,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      title,
-      description,
-      subject,
-      type,
-      content,
-      fileUrl,
-      tags
+      name,
+      quantity,
+      minimum
     } = req.body;
 
-    // Verificar se o material existe e se o usuário pode acessá-lo
+    // Verificar se o material existe
     const existingMaterial = await prisma.material.findUnique({
       where: { id }
     });
@@ -196,36 +147,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Verificar permissões
-    if (req.user.role !== 'ADMIN' && existingMaterial.createdById !== req.user.id) {
-      return res.status(403).json({
-        error: 'Acesso negado'
-      });
-    }
-
     // Preparar dados para atualização
     const updateData = {};
-    if (title) updateData.title = title;
-    if (description) updateData.description = description;
-    if (subject) updateData.subject = subject;
-    if (type) updateData.type = type;
-    if (content) updateData.content = content;
-    if (fileUrl) updateData.fileUrl = fileUrl;
-    if (tags) updateData.tags = tags;
+    if (name) updateData.name = name;
+    if (quantity !== undefined) updateData.quantity = quantity;
+    if (minimum !== undefined) updateData.minimum = minimum;
 
     // Atualizar material
     const material = await prisma.material.update({
       where: { id },
-      data: updateData,
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
+      data: updateData
     });
 
     res.json({
@@ -246,21 +177,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar se o material existe e se o usuário pode acessá-lo
-    const material = await prisma.material.findUnique({
+    // Verificar se o material existe
+    const existingMaterial = await prisma.material.findUnique({
       where: { id }
     });
 
-    if (!material) {
+    if (!existingMaterial) {
       return res.status(404).json({
         error: 'Material não encontrado'
-      });
-    }
-
-    // Verificar permissões
-    if (req.user.role !== 'ADMIN' && material.createdById !== req.user.id) {
-      return res.status(403).json({
-        error: 'Acesso negado'
       });
     }
 
@@ -275,86 +199,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao deletar material:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor'
-    });
-  }
-});
-
-// Buscar materiais por matéria
-router.get('/subject/:subject', authenticateToken, async (req, res) => {
-  try {
-    const { subject } = req.params;
-    const { limit = 20 } = req.query;
-
-    const where = {
-      subject: { contains: subject, mode: 'insensitive' }
-    };
-
-    // Se não for admin, filtrar apenas materiais criados pelo professor
-    if (req.user.role !== 'ADMIN') {
-      where.createdById = req.user.id;
-    }
-
-    const materials = await prisma.material.findMany({
-      where,
-      take: parseInt(limit),
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    res.json(materials);
-
-  } catch (error) {
-    console.error('Erro ao buscar materiais por matéria:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor'
-    });
-  }
-});
-
-// Buscar materiais por tags
-router.get('/tags/:tag', authenticateToken, async (req, res) => {
-  try {
-    const { tag } = req.params;
-    const { limit = 20 } = req.query;
-
-    const where = {
-      tags: { has: tag }
-    };
-
-    // Se não for admin, filtrar apenas materiais criados pelo professor
-    if (req.user.role !== 'ADMIN') {
-      where.createdById = req.user.id;
-    }
-
-    const materials = await prisma.material.findMany({
-      where,
-      take: parseInt(limit),
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    res.json(materials);
-
-  } catch (error) {
-    console.error('Erro ao buscar materiais por tag:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

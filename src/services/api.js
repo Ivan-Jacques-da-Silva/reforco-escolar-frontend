@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Configuração base da API
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3001/api'
+  : `https://${window.location.hostname}:3001/api`;
 
 // Criar instância do axios
 const api = axios.create({
