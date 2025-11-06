@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Modelo de Usuário (Professores/Administradores)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(TEACHER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  students  Student[]
+  sessions  Session[]
+
+  @@map("users")
+}
+
+// Modelo de Sessão para autenticação
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Modelo de Aluno
+model Student {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  grade       String   // Série escolar
+  status      StudentStatus @default(ACTIVE)
+  monthlyFee  Float    @default(149.90)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  teacherId   String
+  teacher     User @relation(fields: [teacherId], references: [id])
+  tutorings   Tutoring[]
+  payments    Payment[]
+
+  @@map("students")
+}
+
+// Modelo de Reforço/Aula
+model Tutoring {
+  id          String   @id @default(cuid())
+  studentId   String
+  subject     String   // Disciplina
+  topic       String   // Assunto específico
+  plan        String   // Tipo de plano (pacote, avulsa)
+  nextClass   DateTime?
+  status      TutoringStatus @default(SCHEDULED)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("tutorings")
+}
+
+// Modelo de Material
+model Material {
+  id        String   @id @default(cuid())
+  sku       String   @unique
+  name      String
+  quantity  Int
+  minimum   Int      @default(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("materials")
+}
+
+// Modelo de Pagamento
+model Payment {
+  id          String   @id @default(cuid())
+  studentId   String
+  reference   String   // Referência do pagamento (ex: "Mensalidade 09/2025")
+  amount      Float
+  status      PaymentStatus @default(PENDING)
+  gateway     String?  @default("CORA")
+  dueDate     DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum TutoringStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
