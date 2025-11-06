@@ -1,3 +1,4 @@
+const logger = require('../config/logger');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -68,7 +69,7 @@ router.post('/register', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no registro:', error);
+    logger.error('Erro no registro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -142,7 +143,7 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no login:', error);
+    logger.error('Erro no login:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -162,7 +163,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no logout:', error);
+    logger.error('Erro no logout:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -176,7 +177,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       user: req.user
     });
   } catch (error) {
-    console.error('Erro ao buscar dados do usuário:', error);
+    logger.error('Erro ao buscar dados do usuário:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -229,7 +230,7 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao alterar senha:', error);
+    logger.error('Erro ao alterar senha:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

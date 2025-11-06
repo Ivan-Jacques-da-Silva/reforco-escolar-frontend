@@ -1,11 +1,12 @@
 import axios from 'axios';
+import logger from '../utils/logger';
 
-// Configuração base da API
 const API_BASE_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:3001/api'
-  : `https://${window.location.hostname}:3001/api`;
+  : `${window.location.protocol}//${window.location.hostname}/api`;
 
-// Criar instância do axios
+logger.info('API Base URL configurada', { url: API_BASE_URL });
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -13,35 +14,54 @@ const api = axios.create({
   },
 });
 
-// Interceptor para adicionar token de autenticação
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    logger.apiRequest(config.method.toUpperCase(), config.url, config.data);
+    
     return config;
   },
   (error) => {
+    logger.error('Erro ao preparar requisição', error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor para tratar respostas e erros
 api.interceptors.response.use(
   (response) => {
+    logger.apiResponse(
+      response.config.method.toUpperCase(), 
+      response.config.url, 
+      response.status,
+      response.data
+    );
     return response;
   },
   (error) => {
-    // Se o token expirou ou é inválido, limpar dados locais
+    if (error.response) {
+      logger.apiError(error.config?.method?.toUpperCase(), error.config?.url, error);
+    } else if (error.request) {
+      logger.error('Erro de rede - Sem resposta do servidor', {
+        endpoint: error.config?.url
+      });
+    } else {
+      logger.error('Erro ao configurar requisição', { message: error.message });
+    }
+
     if (error.response?.status === 401) {
+      logger.warn('Sessão expirada - Redirecionando para login');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Redirecionar para login se não estiver na página de login
+      
       if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
         window.location.href = '/login';
       }
     }
+    
     return Promise.reject(error);
   }
 );

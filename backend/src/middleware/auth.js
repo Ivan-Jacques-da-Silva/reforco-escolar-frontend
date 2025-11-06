@@ -1,22 +1,21 @@
 const jwt = require('jsonwebtoken');
 const { prisma } = require('../config/database');
+const logger = require('../config/logger');
 
-// Middleware para verificar token JWT
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
+      logger.warn('Tentativa de acesso sem token', { ip: req.ip, path: req.path });
       return res.status(401).json({
         error: 'Token de acesso requerido'
       });
     }
 
-    // Verificar se o token é válido
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Verificar se a sessão ainda existe no banco
     const session = await prisma.session.findUnique({
       where: { token },
       include: {
@@ -32,30 +31,33 @@ const authenticateToken = async (req, res, next) => {
     });
 
     if (!session) {
+      logger.warn('Sessão inválida ou inexistente', { userId: decoded.userId });
       return res.status(401).json({
         error: 'Sessão inválida ou expirada'
       });
     }
 
-    // Verificar se a sessão não expirou
     if (new Date() > session.expiresAt) {
-      // Remover sessão expirada
       await prisma.session.delete({
         where: { id: session.id }
       });
       
+      logger.info('Sessão expirada removida', { sessionId: session.id, userId: session.user.id });
       return res.status(401).json({
         error: 'Sessão expirada'
       });
     }
 
-    // Adicionar dados do usuário à requisição
     req.user = session.user;
     req.sessionId = session.id;
     
     next();
   } catch (error) {
-    console.error('Erro na autenticação:', error);
+    logger.error('Erro na autenticação', { 
+      error: error.message, 
+      stack: error.stack,
+      path: req.path 
+    });
     
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
@@ -75,9 +77,13 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Middleware para verificar se o usuário é admin
 const requireAdmin = (req, res, next) => {
   if (req.user.role !== 'ADMIN') {
+    logger.warn('Tentativa de acesso admin negado', { 
+      userId: req.user.id, 
+      role: req.user.role,
+      path: req.path 
+    });
     return res.status(403).json({
       error: 'Acesso negado. Permissões de administrador requeridas.'
     });
@@ -85,7 +91,6 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware para verificar se o usuário pode acessar dados de um aluno específico
 const canAccessStudent = async (req, res, next) => {
   try {
     const studentId = req.params.id || req.body.studentId;
@@ -96,24 +101,31 @@ const canAccessStudent = async (req, res, next) => {
       });
     }
 
-    // Admin pode acessar qualquer aluno
     if (req.user.role === 'ADMIN') {
       return next();
     }
 
-    // Professor só pode acessar seus próprios alunos
     const student = await prisma.student.findUnique({
       where: { id: studentId },
       select: { teacherId: true }
     });
 
     if (!student) {
+      logger.warn('Tentativa de acesso a aluno inexistente', { 
+        studentId, 
+        userId: req.user.id 
+      });
       return res.status(404).json({
         error: 'Aluno não encontrado'
       });
     }
 
     if (student.teacherId !== req.user.id) {
+      logger.warn('Tentativa de acesso não autorizado a aluno', { 
+        studentId, 
+        teacherId: student.teacherId,
+        userId: req.user.id 
+      });
       return res.status(403).json({
         error: 'Acesso negado. Você só pode acessar seus próprios alunos.'
       });
@@ -121,7 +133,11 @@ const canAccessStudent = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Erro na verificação de acesso ao aluno:', error);
+    logger.error('Erro na verificação de acesso ao aluno', { 
+      error: error.message,
+      stack: error.stack,
+      studentId: req.params.id || req.body.studentId 
+    });
     return res.status(500).json({
       error: 'Erro interno do servidor'
     });

@@ -1,42 +1,64 @@
 const { PrismaClient } = require('@prisma/client');
+const logger = require('./logger');
 
 const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  log: [
+    {
+      emit: 'event',
+      level: 'query',
+    },
+    {
+      emit: 'event',
+      level: 'error',
+    },
+    {
+      emit: 'event',
+      level: 'warn',
+    },
+  ],
 });
 
-// Função para conectar ao banco
+if (process.env.NODE_ENV === 'development') {
+  prisma.$on('query', (e) => {
+    logger.debug('Prisma Query', {
+      query: e.query,
+      params: e.params,
+      duration: `${e.duration}ms`
+    });
+  });
+}
+
+prisma.$on('error', (e) => {
+  logger.error('Erro no Prisma', { error: e.message, target: e.target });
+});
+
+prisma.$on('warn', (e) => {
+  logger.warn('Aviso do Prisma', { message: e.message });
+});
+
 async function connectDatabase() {
   try {
     await prisma.$connect();
-    console.log('✅ Conectado ao banco de dados PostgreSQL');
+    logger.info('✅ Conectado ao banco de dados PostgreSQL');
   } catch (error) {
-    console.error('❌ Erro ao conectar ao banco de dados:', error);
+    logger.error('❌ Erro ao conectar ao banco de dados', { 
+      error: error.message,
+      stack: error.stack 
+    });
     process.exit(1);
   }
 }
 
-// Função para desconectar do banco
 async function disconnectDatabase() {
   try {
     await prisma.$disconnect();
-    console.log('🔌 Desconectado do banco de dados');
+    logger.info('🔌 Desconectado do banco de dados');
   } catch (error) {
-    console.error('❌ Erro ao desconectar do banco de dados:', error);
+    logger.error('❌ Erro ao desconectar do banco de dados', { 
+      error: error.message 
+    });
   }
 }
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Recebido SIGINT. Fechando servidor...');
-  await disconnectDatabase();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Recebido SIGTERM. Fechando servidor...');
-  await disconnectDatabase();
-  process.exit(0);
-});
 
 module.exports = {
   prisma,

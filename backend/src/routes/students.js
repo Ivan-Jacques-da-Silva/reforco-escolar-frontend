@@ -1,3 +1,4 @@
+const logger = require('../config/logger');
 const express = require('express');
 const { prisma } = require('../config/database');
 const { authenticateToken, requireAdmin, canAccessStudent } = require('../middleware/auth');
@@ -68,7 +69,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar alunos:', error);
+    logger.error('Erro ao listar alunos:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -110,7 +111,7 @@ router.get('/:id', authenticateToken, canAccessStudent, async (req, res) => {
     res.json(student);
 
   } catch (error) {
-    console.error('Erro ao buscar aluno:', error);
+    logger.error('Erro ao buscar aluno:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -187,7 +188,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao criar aluno:', error);
+    logger.error('Erro ao criar aluno:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -269,7 +270,7 @@ router.put('/:id', authenticateToken, canAccessStudent, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao atualizar aluno:', error);
+    logger.error('Erro ao atualizar aluno:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -302,7 +303,7 @@ router.delete('/:id', authenticateToken, canAccessStudent, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao deletar aluno:', error);
+    logger.error('Erro ao deletar aluno:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

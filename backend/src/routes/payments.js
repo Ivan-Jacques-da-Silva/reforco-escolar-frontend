@@ -1,3 +1,4 @@
+const logger = require('../config/logger');
 const express = require('express');
 const { prisma } = require('../config/database');
 const { authenticateToken, canAccessStudent } = require('../middleware/auth');
@@ -73,7 +74,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar pagamentos:', error);
+    logger.error('Erro ao listar pagamentos:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -121,7 +122,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json(payment);
 
   } catch (error) {
-    console.error('Erro ao buscar pagamento:', error);
+    logger.error('Erro ao buscar pagamento:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -202,7 +203,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao criar pagamento:', error);
+    logger.error('Erro ao criar pagamento:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -294,7 +295,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao atualizar pagamento:', error);
+    logger.error('Erro ao atualizar pagamento:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -341,7 +342,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao deletar pagamento:', error);
+    logger.error('Erro ao deletar pagamento:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -406,7 +407,7 @@ router.patch('/:id/pay', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao marcar pagamento como pago:', error);
+    logger.error('Erro ao marcar pagamento como pago:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -478,7 +479,7 @@ router.get('/reports/period', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao gerar relatório de pagamentos:', error);
+    logger.error('Erro ao gerar relatório de pagamentos:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

@@ -1,3 +1,4 @@
+const logger = require('../config/logger');
 const express = require('express');
 const { prisma } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
@@ -73,7 +74,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar reforços:', error);
+    logger.error('Erro ao listar reforços:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -121,7 +122,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json(tutoring);
 
   } catch (error) {
-    console.error('Erro ao buscar reforço:', error);
+    logger.error('Erro ao buscar reforço:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -198,7 +199,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao criar reforço:', error);
+    logger.error('Erro ao criar reforço:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -272,7 +273,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao atualizar reforço:', error);
+    logger.error('Erro ao atualizar reforço:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -319,7 +320,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao deletar reforço:', error);
+    logger.error('Erro ao deletar reforço:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -381,7 +382,7 @@ router.patch('/:id/complete', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao marcar reforço como concluído:', error);
+    logger.error('Erro ao marcar reforço como concluído:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

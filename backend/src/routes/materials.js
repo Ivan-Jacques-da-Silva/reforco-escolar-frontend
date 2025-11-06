@@ -1,3 +1,4 @@
+const logger = require('../config/logger');
 const express = require('express');
 const { prisma } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
@@ -43,7 +44,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar materiais:', error);
+    logger.error('Erro ao listar materiais:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -68,7 +69,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json(material);
 
   } catch (error) {
-    console.error('Erro ao buscar material:', error);
+    logger.error('Erro ao buscar material:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -119,7 +120,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao criar material:', error);
+    logger.error('Erro ao criar material:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -165,7 +166,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao atualizar material:', error);
+    logger.error('Erro ao atualizar material:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -198,7 +199,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao deletar material:', error);
+    logger.error('Erro ao deletar material:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
