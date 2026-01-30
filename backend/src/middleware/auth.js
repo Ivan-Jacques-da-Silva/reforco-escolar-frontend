@@ -29,6 +29,7 @@ const authenticateToken = async (req, res, next) => {
             secondaryColor: true,
             avatarUrl: true,
             logoUrl: true,
+            systemName: true,
             updatedAt: true
           }
         },

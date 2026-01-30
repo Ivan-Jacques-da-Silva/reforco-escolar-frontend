@@ -155,7 +155,7 @@ function Topo({ user, onLogout, onOpenMenu }) {
                <div className="size-9 rounded-2xl shadow-inner" style={{ backgroundColor: primaryColor }} />
             )}
           </div>
-          <div className="font-extrabold tracking-tight leading-none">Grupo REP</div>
+          <div className="font-extrabold tracking-tight leading-none">{user?.systemName || "Grupo REP"}</div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="rounded-xl"><Bell className="h-5 w-5" /></Button>
@@ -208,7 +208,7 @@ function MobileDrawerNav({ aberto, aoFechar, ativo, aoTrocar, user }) {
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
              <Marca user={user} />
-             <div className="font-semibold">Grupo REP</div>
+             <div className="font-semibold">{user?.systemName || "Grupo REP"}</div>
           </div>
           <Button
             variant="ghost"

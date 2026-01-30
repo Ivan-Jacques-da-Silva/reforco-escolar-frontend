@@ -22,6 +22,7 @@ model User {
   textColor      String?  @default("#1e293b")
   avatarUrl      String?
   logoUrl        String?
+  systemName     String?  @default("Grupo REP")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

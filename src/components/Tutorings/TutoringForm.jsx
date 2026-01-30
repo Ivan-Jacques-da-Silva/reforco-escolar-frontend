@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { ptBR } from 'date-fns/locale';
 import "react-datepicker/dist/react-datepicker.css";
-import { X, BookOpen, Calendar, FileText, ChevronRight, Check } from 'lucide-react';
+import { X, BookOpen, Calendar, FileText, ChevronRight, Check, ClipboardList } from 'lucide-react';
 import { studentsApi } from '../../services/studentsApi';
 
 registerLocale('pt-BR', ptBR);
@@ -13,6 +13,7 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
     studentId: '',
     subject: '',
     topic: '',
+    plan: '',
     nextClass: '',
     status: 'SCHEDULED'
   });
@@ -26,6 +27,12 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
     { id: 'schedule', label: 'Agendamento', icon: Calendar }
   ];
 
+  // Campos por aba para validação
+  const tabFields = {
+    details: ['studentId', 'subject', 'topic', 'plan'],
+    schedule: ['nextClass']
+  };
+
   useEffect(() => {
     loadStudents();
     if (tutoring) {
@@ -33,6 +40,7 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
         studentId: tutoring.studentId || '',
         subject: tutoring.subject || '',
         topic: tutoring.topic || '',
+        plan: tutoring.plan || '',
         nextClass: tutoring.nextClass ? new Date(tutoring.nextClass) : '',
         status: tutoring.status || 'SCHEDULED'
       });
@@ -74,7 +82,7 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
     }
   };
 
-  const validate = () => {
+  const getValidationErrors = () => {
     const newErrors = {};
 
     if (!formData.studentId.trim()) {
@@ -86,10 +94,38 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
     if (!formData.topic.trim()) {
       newErrors.topic = 'Assunto é obrigatório';
     }
+    if (!formData.plan.trim()) {
+      newErrors.plan = 'Plano de aula é obrigatório';
+    }
     if (!formData.nextClass) {
       newErrors.nextClass = 'Data e hora são obrigatórias';
     }
 
+    return newErrors;
+  };
+
+  const validateTab = (tabId) => {
+    const allErrors = getValidationErrors();
+    const tabSpecificErrors = {};
+    const fieldsToCheck = tabFields[tabId] || [];
+
+    fieldsToCheck.forEach(field => {
+      if (allErrors[field]) {
+        tabSpecificErrors[field] = allErrors[field];
+      }
+    });
+
+    if (Object.keys(tabSpecificErrors).length > 0) {
+      setErrors(tabSpecificErrors);
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const validateForm = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -97,12 +133,14 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validate()) {
-      // Switch to the tab with errors if needed
-      if (errors.studentId || errors.subject || errors.topic) {
-        setActiveTab('details');
-      } else if (errors.plan || errors.nextClass) {
-        setActiveTab('schedule');
+    if (!validateForm()) {
+      // Switch to tab with errors
+      const errors = getValidationErrors();
+      const firstErrorField = Object.keys(errors)[0];
+      const errorTab = Object.keys(tabFields).find(tab => tabFields[tab].includes(firstErrorField));
+      
+      if (errorTab) {
+        setActiveTab(errorTab);
       }
       return;
     }
@@ -116,6 +154,11 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
       await onSave(dataToSend);
     } catch (error) {
       console.error('Erro ao salvar reforço:', error);
+      if (error.response?.data?.error) {
+         // Se for erro do backend, exibe alerta ou trata conforme necessidade
+         // Aqui, como não temos um campo "geral" de erro no form, podemos usar alert ou setar um erro genérico
+         alert(error.response.data.error);
+      }
     } finally {
       setLoading(false);
     }
@@ -200,6 +243,30 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
                 </div>
                 {errors.topic && (
                   <p className="mt-1 text-sm text-red-600">{errors.topic}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Plano de Aula *
+                </label>
+                <div className="relative">
+                  <div className="absolute top-3 left-3 pointer-events-none">
+                    <ClipboardList className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <textarea
+                    name="plan"
+                    value={formData.plan}
+                    onChange={handleChange}
+                    rows="3"
+                    placeholder="Descreva o plano da aula..."
+                    className={`w-full pl-10 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.plan ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                </div>
+                {errors.plan && (
+                  <p className="mt-1 text-sm text-red-600">{errors.plan}</p>
                 )}
               </div>
             </div>
@@ -292,8 +359,8 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
               const isActive = activeTab === tab.id;
               
               // Verifica se tem erro na aba
-              const hasError = (tab.id === 'details' && (errors.studentId || errors.subject || errors.topic)) ||
-                               (tab.id === 'schedule' && (errors.plan || errors.nextClass));
+              const hasError = (tab.id === 'details' && (errors.studentId || errors.subject || errors.topic || errors.plan)) ||
+                               (tab.id === 'schedule' && errors.nextClass);
 
               return (
                 <button
@@ -341,6 +408,7 @@ const TutoringForm = ({ tutoring, onSave, onCancel }) => {
                <button
                  type="button"
                  onClick={() => {
+                   if (!validateTab(activeTab)) return;
                    const currentIndex = tabs.findIndex(t => t.id === activeTab);
                    if (currentIndex < tabs.length - 1) {
                      setActiveTab(tabs[currentIndex + 1].id);

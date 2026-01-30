@@ -33,7 +33,8 @@ const UserConfigForm = ({ user, onUserUpdate }) => {
     primaria: user?.primaryColor || "#0ea5e9", // sky-500 default
     secundaria: user?.secondaryColor || "#f8fafc", // slate-50 default
     fonte: user?.fontFamily || "Inter",
-    texto: user?.textColor || "#1e293b"
+    texto: user?.textColor || "#1e293b",
+    systemName: user?.systemName || "Grupo REP"
   });
 
   // Estado para Imagens
@@ -56,7 +57,8 @@ const UserConfigForm = ({ user, onUserUpdate }) => {
         primaria: user.primaryColor || "#0ea5e9",
         secundaria: user.secondaryColor || "#f8fafc",
         fonte: user.fontFamily || "Inter",
-        texto: user.textColor || "#1e293b"
+        texto: user.textColor || "#1e293b",
+        systemName: user.systemName || "Grupo REP"
       });
       // Adiciona timestamp para forçar atualização do cache da imagem
       setAvatarPreview(user.avatarUrl ? `${getImageUrl(user.avatarUrl)}?t=${user.updatedAt ? new Date(user.updatedAt).getTime() : Date.now()}` : null);
@@ -104,6 +106,7 @@ const UserConfigForm = ({ user, onUserUpdate }) => {
     formData.append('secondaryColor', tema.secundaria);
     formData.append('fontFamily', tema.fonte);
     formData.append('textColor', tema.texto);
+    formData.append('systemName', tema.systemName);
     
     if (avatarFile) formData.append('avatar', avatarFile);
     if (logoFile) formData.append('logo', logoFile);
@@ -251,9 +254,22 @@ const UserConfigForm = ({ user, onUserUpdate }) => {
                 <input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'logo')} />
               </label>
             </div>
-            <div className="flex-1 space-y-1 text-center sm:text-left">
-              <h3 className="font-medium">Logo da Escola</h3>
-              <p className="text-sm text-muted-foreground">Será exibido no topo e em relatórios.</p>
+            <div className="flex-1 space-y-4 text-center sm:text-left">
+              <div>
+                <h3 className="font-medium">Identidade Visual</h3>
+                <p className="text-sm text-muted-foreground">Logo e nome da escola.</p>
+              </div>
+              <div className="space-y-2 max-w-sm mx-auto sm:mx-0">
+                 <Label htmlFor="systemName">Nome da Escola/Sistema</Label>
+                 <Input 
+                   id="systemName" 
+                   name="systemName" 
+                   value={tema.systemName} 
+                   onChange={handleTemaChange} 
+                   className="rounded-xl"
+                   placeholder="Ex: Grupo REP"
+                 />
+              </div>
             </div>
           </div>
 

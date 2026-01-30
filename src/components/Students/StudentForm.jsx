@@ -147,8 +147,16 @@ const StudentForm = ({ student, onSave, onCancel, isOpen }) => {
     setActiveTab('personal');
   }, [student]);
 
+  // Campos por aba para validação
+  const tabFields = {
+    personal: ['name', 'email', 'birthDate', 'phone', 'password', 'confirmPassword'],
+    school: ['school', 'grade'],
+    parents: ['parentName', 'parentPhone', 'parentEmail'],
+    financial: ['amount', 'installments', 'dueDateDay', 'financialType']
+  };
+
   // Validação do formulário
-  const validateForm = () => {
+  const getValidationErrors = () => {
     const newErrors = {};
 
     // Validar nome
@@ -232,6 +240,31 @@ const StudentForm = ({ student, onSave, onCancel, isOpen }) => {
       }
     }
 
+    return newErrors;
+  };
+
+  const validateTab = (tabId) => {
+    const allErrors = getValidationErrors();
+    const tabSpecificErrors = {};
+    const fieldsToCheck = tabFields[tabId] || [];
+
+    fieldsToCheck.forEach(field => {
+      if (allErrors[field]) {
+        tabSpecificErrors[field] = allErrors[field];
+      }
+    });
+
+    if (Object.keys(tabSpecificErrors).length > 0) {
+      setErrors(tabSpecificErrors);
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const validateForm = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -284,6 +317,14 @@ const StudentForm = ({ student, onSave, onCancel, isOpen }) => {
     e.preventDefault();
     
     if (!validateForm()) {
+      // Switch to tab with errors
+      const errors = getValidationErrors();
+      const firstErrorField = Object.keys(errors)[0];
+      const errorTab = Object.keys(tabFields).find(tab => tabFields[tab].includes(firstErrorField));
+      
+      if (errorTab) {
+        setActiveTab(errorTab);
+      }
       return;
     }
 
@@ -861,6 +902,7 @@ const StudentForm = ({ student, onSave, onCancel, isOpen }) => {
                  key="btn-next"
                  type="button"
                  onClick={() => {
+                   if (!validateTab(activeTab)) return;
                    const currentIndex = tabs.findIndex(t => t.id === activeTab);
                    if (currentIndex < tabs.length - 1) {
                      setActiveTab(tabs[currentIndex + 1].id);

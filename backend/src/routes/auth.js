@@ -269,7 +269,7 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 // Atualizar Perfil e Tema
 router.put('/profile', authenticateToken, upload.fields([{ name: 'avatar', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
   try {
-    const { name, email, password, primaryColor, secondaryColor, fontFamily, textColor } = req.body;
+    const { name, email, password, primaryColor, secondaryColor, fontFamily, textColor, systemName } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -354,6 +354,7 @@ router.put('/profile', authenticateToken, upload.fields([{ name: 'avatar', maxCo
       if (secondaryColor) updateData.secondaryColor = secondaryColor;
       if (fontFamily) updateData.fontFamily = fontFamily;
       if (textColor) updateData.textColor = textColor;
+      if (systemName) updateData.systemName = systemName;
       
       // Handle files
       if (req.files) {
@@ -385,6 +386,7 @@ router.put('/profile', authenticateToken, upload.fields([{ name: 'avatar', maxCo
           textColor: true,
           avatarUrl: true,
           logoUrl: true,
+          systemName: true,
           createdAt: true,
           updatedAt: true
         }
