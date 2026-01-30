@@ -9,14 +9,21 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed": "node src/utils/seed.js"
+    "db:seed": "node src/utils/seed.js",
+    "db:demo": "node scripts/seed-demo.js",
+    "user:create": "node scripts/create-user.js"
   },
-  "keywords": ["education", "tutoring", "api"],
+  "keywords": [
+    "education",
+    "tutoring",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "axios": "^1.13.4",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -24,7 +31,10 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "prisma": "^5.22.0"
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "prisma": "^5.22.0",
+    "winston": "^3.14.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"

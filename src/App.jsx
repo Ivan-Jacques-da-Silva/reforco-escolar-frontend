@@ -4,6 +4,8 @@ import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Dashboard from './Dashboard';
 import { authService, utils } from './services/api';
+import { ModalProvider } from './contexts/ModalContext';
+import GlobalModal from './components/common/GlobalModal';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -54,40 +56,43 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* Rota pública - Landing Page */}
-        <Route 
-          path="/" 
-          element={
-            user ? <Navigate to="/dashboard" replace /> : <LandingPage />
-          } 
-        />
-        
-        {/* Rota de Login */}
-        <Route 
-          path="/login" 
-          element={
-            user ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />
-          } 
-        />
-        
-        {/* Rota protegida - Dashboard */}
-        <Route 
-          path="/dashboard" 
-          element={
-            user ? (
-              <Dashboard user={user} onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          } 
-        />
-        
-        {/* Redirecionar rotas não encontradas */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <ModalProvider>
+      <GlobalModal />
+      <Router>
+        <Routes>
+          {/* Rota pública - Landing Page */}
+          <Route 
+            path="/" 
+            element={
+              user ? <Navigate to="/dashboard" replace /> : <LandingPage />
+            } 
+          />
+          
+          {/* Rota de Login */}
+          <Route 
+            path="/login" 
+            element={
+              user ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />
+            } 
+          />
+          
+          {/* Rota protegida - Dashboard */}
+          <Route 
+            path="/dashboard" 
+            element={
+              user ? (
+                <Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleLogin} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
+          
+          {/* Redirecionar rotas não encontradas */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </ModalProvider>
   );
 }
 

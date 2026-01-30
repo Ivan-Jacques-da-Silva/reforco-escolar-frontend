@@ -11,8 +11,11 @@ const PaymentsList = ({
   onFiltersChange,
   onEdit,
   onDelete,
-  onMarkAsPaid
+  onMarkAsPaid,
+  user
 }) => {
+  const isStudent = user?.role === 'STUDENT';
+
   const handleSearchChange = (e) => {
     onFiltersChange({ ...filters, search: e.target.value });
   };
@@ -48,10 +51,12 @@ const PaymentsList = ({
   };
 
   const formatCurrency = (value) => {
+    const num = Number(value);
+    if (value == null || !isFinite(num)) return '--';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(num);
   };
 
   if (loading) {
@@ -109,7 +114,8 @@ const PaymentsList = ({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          {/* Desktop/Tablet Landscape View */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -137,8 +143,10 @@ const PaymentsList = ({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
+                {payments.map((payment) => {
+                  if (!payment) return null; // Proteção contra itens nulos
+                  return (
+                  <tr key={payment.id || Math.random()} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {payment.student?.name || 'N/A'}
@@ -148,7 +156,7 @@ const PaymentsList = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {payment.reference}
+                      {payment.reference || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatCurrency(payment.amount)}
@@ -165,36 +173,105 @@ const PaymentsList = ({
                       {getStatusBadge(payment.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end gap-2">
-                        {payment.status === 'PENDING' && onMarkAsPaid && (
+                      {!isStudent && (
+                        <div className="flex justify-end gap-2">
+                          {payment.status === 'PENDING' && onMarkAsPaid && (
+                            <button
+                              onClick={() => onMarkAsPaid(payment)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Marcar como pago"
+                            >
+                              <CheckCircle className="h-5 w-5" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => onMarkAsPaid(payment)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Marcar como pago"
+                            onClick={() => onEdit(payment)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Editar"
                           >
-                            <CheckCircle className="h-5 w-5" />
+                            <Edit className="h-5 w-5" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => onEdit(payment)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Editar"
-                        >
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(payment)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
+                          <button
+                            onClick={() => onDelete(payment)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden">
+            <ul className="divide-y divide-gray-200">
+              {payments.map((payment) => {
+                if (!payment) return null;
+                return (
+                <li key={payment.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-base font-semibold text-gray-900">{payment.student?.name || 'N/A'}</p>
+                        <p className="text-sm text-gray-500">{payment.reference}</p>
+                      </div>
+                      {getStatusBadge(payment.status)}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-500 text-xs block uppercase tracking-wider mb-1">Valor</span>
+                        <span className="font-semibold text-gray-900 text-base">{formatCurrency(payment.amount)}</span>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-500 text-xs block uppercase tracking-wider mb-1">Vencimento</span>
+                        <span className="font-medium text-gray-900">{formatDate(payment.dueDate)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                       <div className="text-xs text-gray-500">
+                          Gateway: <span className="font-medium text-gray-700">{payment.gateway || 'N/A'}</span>
+                       </div>
+                       {!isStudent && (
+                         <div className="flex items-center gap-3">
+                          {payment.status === 'PENDING' && onMarkAsPaid && (
+                            <button
+                              onClick={() => onMarkAsPaid(payment)}
+                              className="text-green-600 hover:text-green-900 p-1"
+                              title="Marcar como pago"
+                            >
+                              <CheckCircle className="h-6 w-6" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onEdit(payment)}
+                            className="text-blue-600 hover:text-blue-900 p-1"
+                            title="Editar"
+                          >
+                            <Edit className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => onDelete(payment)}
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                       )}
+                    </div>
+                  </div>
+                </li>
+              );
+              })}
+            </ul>
           </div>
 
           {pagination.totalPages > 1 && (

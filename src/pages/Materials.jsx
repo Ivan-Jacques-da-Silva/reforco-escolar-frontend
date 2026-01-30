@@ -4,9 +4,10 @@ import MaterialForm from '../components/Materials/MaterialForm';
 import DeleteConfirmModal from '../components/Materials/DeleteConfirmModal';
 import { useToast } from '../components/common/Toast';
 import { materialsApi } from '../services/materialsApi';
+import { Button } from '../components/ui/button';
 
-const Materials = () => {
-  const { success, error, ToastContainer } = useToast();
+const Materials = ({ embedded = false }) => {
+  const { success, error: toastError, ToastContainer } = useToast();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [globalError, setGlobalError] = useState('');
@@ -30,7 +31,7 @@ const Materials = () => {
     try {
       setLoading(true);
       setGlobalError('');
-      
+
       const response = await materialsApi.getAll({
         page,
         limit: pagination.limit,
@@ -48,7 +49,7 @@ const Materials = () => {
       console.error('Erro ao carregar materiais:', err);
       const errorMessage = 'Erro ao carregar materiais. Tente novamente.';
       setGlobalError(errorMessage);
-      error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -88,18 +89,18 @@ const Materials = () => {
     try {
       setDeleteLoading(true);
       await materialsApi.delete(selectedMaterial.id);
-      
+
       await loadMaterials(pagination.page);
-      
+
       setShowDeleteModal(false);
       setSelectedMaterial(null);
-      
+
       success('Material excluído com sucesso');
     } catch (err) {
       console.error('Erro ao excluir material:', err);
       const errorMessage = 'Erro ao excluir material. Tente novamente.';
       setGlobalError(errorMessage);
-      error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setDeleteLoading(false);
     }
@@ -114,43 +115,74 @@ const Materials = () => {
         await materialsApi.create(materialData);
         success('Material criado com sucesso');
       }
-      
+
       await loadMaterials(pagination.page);
-      
+
       setShowForm(false);
       setEditingMaterial(null);
     } catch (err) {
       console.error('Erro ao salvar material:', err);
-      const errorMessage = editingMaterial 
+      const errorMessage = editingMaterial
         ? 'Erro ao atualizar material. Tente novamente.'
         : 'Erro ao criar material. Tente novamente.';
-      error(errorMessage);
+      toastError(errorMessage);
       throw err;
     }
   };
 
+  const handleUpdateStock = async (material, newQuantity) => {
+    try {
+      if (newQuantity < 0) return;
+      
+      // Otimistic update
+      setMaterials(prev => prev.map(m => 
+        m.id === material.id ? { ...m, quantity: newQuantity } : m
+      ));
+
+      await materialsApi.update(material.id, { quantity: newQuantity });
+      
+      // Opcional: recarregar para garantir sincronia, mas o otimistic já resolve visualmente
+      // await loadMaterials(pagination.page);
+    } catch (err) {
+      console.error('Erro ao atualizar estoque:', err);
+      toastError('Erro ao atualizar estoque. Tente novamente.');
+      // Revert changes on error
+      loadMaterials(pagination.page);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Materiais</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Gerencie o estoque de materiais escolares
-              </p>
+    <div className={(embedded ? "" : "min-h-screen bg-gray-50") + " overflow-x-hidden"}>
+      <div className={embedded ? "" : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"}>
+        {!embedded && (
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Materiais</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Gerencie o estoque de materiais escolares
+                </p>
+              </div>
+              <Button onClick={handleAddMaterial} className="gap-2">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 6v12M6 12h12" />
+                </svg>
+                Novo Material
+              </Button>
             </div>
-            <button
-              onClick={handleAddMaterial}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </div>
+        )}
+
+        {embedded && (
+          <div className="px-4 sm:px-0 mb-4 flex justify-end">
+            <Button onClick={handleAddMaterial} className="gap-2">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 6v12M6 12h12" />
               </svg>
               Novo Material
-            </button>
+            </Button>
           </div>
-        </div>
+        )}
 
         {globalError && (
           <div className="px-4 sm:px-0 mb-4">
@@ -179,7 +211,7 @@ const Materials = () => {
           </div>
         )}
 
-        <div className="px-4 sm:px-0">
+        <div className={embedded ? "" : "px-4 sm:px-0"}>
           <MaterialsList
             materials={materials}
             loading={loading}
@@ -190,6 +222,7 @@ const Materials = () => {
             onFiltersChange={handleFiltersChange}
             onEdit={handleEditMaterial}
             onDelete={handleDeleteMaterial}
+            onUpdateStock={handleUpdateStock}
           />
         </div>
       </div>

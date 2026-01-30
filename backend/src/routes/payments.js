@@ -14,8 +14,10 @@ router.get('/', authenticateToken, async (req, res) => {
     // Construir filtros
     const where = {};
     
-    // Se não for admin, filtrar apenas pagamentos dos alunos do professor
-    if (req.user.role !== 'ADMIN') {
+    // Se não for admin, filtrar adequadamente
+    if (req.user.role === 'STUDENT') {
+      where.studentId = req.user.id;
+    } else if (req.user.role !== 'ADMIN') {
       where.student = {
         teacherId: req.user.id
       };
@@ -113,7 +115,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 
     // Verificar se o usuário pode acessar este pagamento
-    if (req.user.role !== 'ADMIN' && payment.student.teacher.id !== req.user.id) {
+    if (req.user.role === 'STUDENT') {
+      if (payment.studentId !== req.user.id) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
+    } else if (req.user.role !== 'ADMIN' && payment.student.teacher.id !== req.user.id) {
       return res.status(403).json({
         error: 'Acesso negado'
       });
@@ -177,13 +183,16 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Criar pagamento
+    // Gerar referência se não fornecida
+    const reference = req.body.reference || description || `Mensalidade ${new Date().getMonth() + 1}/${new Date().getFullYear()}`;
+
     const payment = await prisma.payment.create({
       data: {
         studentId,
         amount: parseFloat(amount),
-        description,
+        reference, // Campo obrigatório no schema
         dueDate: new Date(dueDate),
-        referenceMonth
+        // description e referenceMonth removidos pois não existem no schema
       },
       include: {
         student: {
@@ -432,8 +441,10 @@ router.get('/reports/period', authenticateToken, async (req, res) => {
       }
     };
 
-    // Se não for admin, filtrar apenas pagamentos dos alunos do professor
-    if (req.user.role !== 'ADMIN') {
+    // Se não for admin, filtrar adequadamente
+    if (req.user.role === 'STUDENT') {
+      where.studentId = req.user.id;
+    } else if (req.user.role !== 'ADMIN') {
       where.student = {
         teacherId: req.user.id
       };

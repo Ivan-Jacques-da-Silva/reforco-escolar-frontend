@@ -1,11 +1,44 @@
 import axios from 'axios';
 import logger from '../utils/logger';
 
-const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3001/api'
-  : `${window.location.protocol}//${window.location.hostname}/api`;
+// Flag de autenticação mock (sem backend/BD)
+// Ative definindo VITE_MOCK_AUTH=true no ambiente (ex.: .env.local)
+const MOCK_AUTH = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_MOCK_AUTH === 'true';
 
-logger.info('API Base URL configurada', { url: API_BASE_URL });
+// Lógica inteligente para definir a URL da API
+// 1. Se estiver no domínio de produção, força o uso da API de produção (ignora .env local)
+// 2. Se houver variável de ambiente VITE_API_URL, usa ela
+// 3. Fallback para localhost ou produção baseado no hostname atual
+const getApiUrl = () => {
+  const hostname = window.location.hostname;
+  
+  // Se estiver rodando no domínio de produção, use a API de produção
+  if (hostname === 'progressoescolar.com.br' || hostname === 'www.progressoescolar.com.br') {
+    return 'https://api.progressoescolar.com.br/api';
+  }
+
+  // Se houver env var definida (ex: build local), use-a, A MENOS que seja localhost e estejamos em outro domínio (caso raro)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Fallback padrão
+  return hostname === 'localhost' || hostname === '127.0.0.1'
+    ? 'http://localhost:5057/api'
+    : 'https://api.progressoescolar.com.br/api';
+};
+
+const API_BASE_URL = getApiUrl();
+
+export const getImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  // Remove /api from base url if present to get root
+  const rootUrl = API_BASE_URL.replace(/\/api$/, '');
+  return `${rootUrl}${path}`;
+};
+
+logger.info('API Base URL configurada', { url: API_BASE_URL, hostname: window.location.hostname });
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -53,12 +86,17 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      logger.warn('Sessão expirada - Redirecionando para login');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.location.href = '/login';
+      // Em modo mock não limpamos o token nem redirecionamos
+      if (!MOCK_AUTH) {
+        logger.warn('Sessão expirada - Redirecionando para login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+          window.location.href = '/login';
+        }
+      } else {
+        logger.warn('401 recebido em modo mock — ignorando logout automático');
       }
     }
     
@@ -70,6 +108,25 @@ api.interceptors.response.use(
 export const authService = {
   // Login
   login: async (email, password) => {
+    // Modo mock: ignora chamada ao backend e autentica localmente
+    if (MOCK_AUTH) {
+      const mockUser = {
+        id: 'mock-user-1',
+        name: 'Usuário Demo',
+        email,
+        role: 'admin'
+      };
+      const mockToken = 'mock-token';
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('tokenExpiresAt', expiresAt);
+
+      logger.info('Login mock realizado (sem backend)');
+      return { success: true, data: { token: mockToken, user: mockUser, expiresAt } };
+    }
+
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user, expiresAt } = response.data;
@@ -104,6 +161,16 @@ export const authService = {
 
   // Verificar se o usuário está autenticado
   me: async () => {
+    // Modo mock: valida apenas dados locais
+    if (MOCK_AUTH) {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (user && utils.isTokenValid()) {
+        return { success: true, data: { user } };
+      }
+      return { success: false, error: 'Não autenticado (mock)' };
+    }
+
     try {
       const response = await api.get('/auth/me');
       return { success: true, data: response.data };
@@ -140,6 +207,28 @@ export const authService = {
       return {
         success: false,
         error: error.response?.data?.error || 'Erro ao alterar senha'
+      };
+    }
+  },
+
+  // Atualizar perfil e tema
+  updateProfile: async (data) => {
+    try {
+      const isFormData = data instanceof FormData;
+      const config = isFormData ? {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      } : {};
+
+      const response = await api.put('/auth/profile', data, config);
+      // Atualizar user no localStorage
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Erro ao atualizar perfil'
       };
     }
   }

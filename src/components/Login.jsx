@@ -29,7 +29,7 @@ const Login = ({ onLogin, onBack }) => {
   const handleFillExample = () => {
     setFormData({
       email: "admin@reforcoescolar.com",
-      password: "admin123",
+      password: "123456",
     });
     if (error) setError("");
   };
@@ -133,20 +133,6 @@ const Login = ({ onLogin, onBack }) => {
             </CardHeader>
 
             <CardContent className="px-8 pb-8">
-              {/* Credenciais de exemplo + botão para preencher */}
-              <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-800 flex items-center justify-between">
-                <div>
-                  <span className="font-medium">Exemplo:</span> admin@reforcoescolar.com / admin123
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleFillExample}
-                  className="ml-3 h-8 px-3"
-                >
-                  Login de exemplo
-                </Button>
-              </div>
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Campo Email */}
                 <div className="space-y-2">
@@ -188,8 +174,9 @@ const Login = ({ onLogin, onBack }) => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors z-10 focus:outline-none"
                       disabled={isLoading}
+                      title={showPassword ? "Ocultar senha" : "Ver senha"}
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -256,17 +243,26 @@ const Login = ({ onLogin, onBack }) => {
 
         {/* Informações de demonstração */}
         <motion.div
-          className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200"
+          className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
+          onClick={handleFillExample}
+          title="Clique para preencher as credenciais de administrador"
         >
-          <h4 className="text-sm font-semibold text-blue-800 mb-2">
-            💡 Demonstração
-          </h4>
-          <p className="text-xs text-blue-700">
-            Use qualquer email e senha para acessar o sistema de demonstração.
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-full text-blue-600">
+              <GraduationCap size={20} className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-blue-800 mb-1">
+                Acesso Admin (Demo)
+              </h4>
+              <p className="text-xs text-blue-700">
+                Clique aqui para preencher automaticamente o login de administrador.
+              </p>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

@@ -1,0 +1,206 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e9]: Grupo REP
+    - generic [ref=e10]:
+      - button [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+      - button "Sair" [ref=e15] [cursor=pointer]
+  - generic [ref=e16]:
+    - complementary [ref=e17]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: A
+          - generic [ref=e22]:
+            - generic "Administrador" [ref=e23]
+            - generic [ref=e24]: ADMIN
+        - generic [ref=e25]:
+          - img [ref=e26]
+          - text: Pro
+      - navigation [ref=e29]:
+        - button "Visão Geral" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e34]: Visão Geral
+          - img [ref=e35]
+        - button "Alunos" [ref=e37] [cursor=pointer]:
+          - img [ref=e38]
+          - generic [ref=e43]: Alunos
+          - img [ref=e44]
+        - button "Reforços" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+          - generic [ref=e49]: Reforços
+          - img [ref=e50]
+        - button "Materiais" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - generic [ref=e63]: Materiais
+          - img [ref=e64]
+        - button "Pagamentos" [ref=e66] [cursor=pointer]:
+          - img [ref=e67]
+          - generic [ref=e69]: Pagamentos
+          - img [ref=e70]
+        - button "Mensalidade" [ref=e72] [cursor=pointer]:
+          - img [ref=e73]
+          - generic [ref=e76]: Mensalidade
+          - img [ref=e77]
+        - button "Relatórios" [ref=e79] [cursor=pointer]:
+          - img [ref=e80]
+          - generic [ref=e82]: Relatórios
+          - img [ref=e83]
+        - button "Configurações" [ref=e85] [cursor=pointer]:
+          - img [ref=e86]
+          - generic [ref=e89]: Configurações
+          - img [ref=e90]
+      - generic [ref=e93]:
+        - generic [ref=e94]: Dica
+        - text: Use o menu para navegar entre módulos.
+    - main [ref=e95]:
+      - generic [ref=e97]:
+        - heading "Reforços" [level=1] [ref=e98]
+        - paragraph [ref=e99]: Gerencie seus dados de forma eficiente
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - button "Histórico por Dia" [ref=e104] [cursor=pointer]:
+              - img [ref=e105]
+              - text: Histórico por Dia
+            - button "Novo Reforço" [ref=e107] [cursor=pointer]:
+              - img [ref=e108]
+              - text: Novo Reforço
+          - generic [ref=e111]:
+            - generic [ref=e113]:
+              - textbox "Buscar por aluno, disciplina ou assunto..." [ref=e115]
+              - combobox [ref=e117]:
+                - option "Todos os status" [selected]
+                - option "Agendado"
+                - option "Concluído"
+                - option "Cancelado"
+            - table [ref=e119]:
+              - rowgroup [ref=e120]:
+                - row "Aluno Disciplina Assunto Plano Próxima Aula Status Ações" [ref=e121]:
+                  - columnheader "Aluno" [ref=e122]
+                  - columnheader "Disciplina" [ref=e123]
+                  - columnheader "Assunto" [ref=e124]
+                  - columnheader "Plano" [ref=e125]
+                  - columnheader "Próxima Aula" [ref=e126]
+                  - columnheader "Status" [ref=e127]
+                  - columnheader "Ações" [ref=e128]
+              - rowgroup [ref=e129]:
+                - row "Sofia Mendes 7º Ano Ciências Fotossíntese pacote 31/01/2026, 10:16 Agendado" [ref=e130]:
+                  - cell "Sofia Mendes 7º Ano" [ref=e131]:
+                    - generic [ref=e132]: Sofia Mendes
+                    - generic [ref=e133]: 7º Ano
+                  - cell "Ciências" [ref=e134]
+                  - cell "Fotossíntese" [ref=e135]
+                  - cell "pacote" [ref=e136]
+                  - cell "31/01/2026, 10:16" [ref=e137]
+                  - cell "Agendado" [ref=e138]:
+                    - generic [ref=e139]: Agendado
+                  - cell [ref=e140]:
+                    - generic [ref=e141]:
+                      - button "Marcar como concluído" [ref=e142] [cursor=pointer]:
+                        - img [ref=e143]
+                      - generic [ref=e146]:
+                        - button "Avaliar Desempenho" [ref=e147] [cursor=pointer]:
+                          - img [ref=e148]
+                        - button "Ver Histórico do Dia" [ref=e152] [cursor=pointer]:
+                          - img [ref=e153]
+                      - button "Editar" [ref=e155] [cursor=pointer]:
+                        - img [ref=e156]
+                      - button "Excluir" [ref=e159] [cursor=pointer]:
+                        - img [ref=e160]
+                - row "Pedro Santos 2º Ano EM História Revolução Industrial avulsa 30/01/2026, 10:16 Concluído" [ref=e163]:
+                  - cell "Pedro Santos 2º Ano EM" [ref=e164]:
+                    - generic [ref=e165]: Pedro Santos
+                    - generic [ref=e166]: 2º Ano EM
+                  - cell "História" [ref=e167]
+                  - cell "Revolução Industrial" [ref=e168]
+                  - cell "avulsa" [ref=e169]
+                  - cell "30/01/2026, 10:16" [ref=e170]
+                  - cell "Concluído" [ref=e171]:
+                    - generic [ref=e172]: Concluído
+                  - cell [ref=e173]:
+                    - generic [ref=e174]:
+                      - generic [ref=e175]:
+                        - button "Avaliar Desempenho" [ref=e176] [cursor=pointer]:
+                          - img [ref=e177]
+                        - button "Ver Histórico do Dia" [ref=e181] [cursor=pointer]:
+                          - img [ref=e182]
+                      - button "Editar" [ref=e184] [cursor=pointer]:
+                        - img [ref=e185]
+                      - button "Excluir" [ref=e188] [cursor=pointer]:
+                        - img [ref=e189]
+                - row "Ana Silva 9º Ano Matemática Equações do primeiro grau pacote 29/01/2026, 10:16 Agendado" [ref=e192]:
+                  - cell "Ana Silva 9º Ano" [ref=e193]:
+                    - generic [ref=e194]: Ana Silva
+                    - generic [ref=e195]: 9º Ano
+                  - cell "Matemática" [ref=e196]
+                  - cell "Equações do primeiro grau" [ref=e197]
+                  - cell "pacote" [ref=e198]
+                  - cell "29/01/2026, 10:16" [ref=e199]
+                  - cell "Agendado" [ref=e200]:
+                    - generic [ref=e201]: Agendado
+                  - cell [ref=e202]:
+                    - generic [ref=e203]:
+                      - button "Marcar como concluído" [ref=e204] [cursor=pointer]:
+                        - img [ref=e205]
+                      - generic [ref=e208]:
+                        - button "Avaliar Desempenho" [ref=e209] [cursor=pointer]:
+                          - img [ref=e210]
+                        - button "Ver Histórico do Dia" [ref=e214] [cursor=pointer]:
+                          - img [ref=e215]
+                      - button "Editar" [ref=e217] [cursor=pointer]:
+                        - img [ref=e218]
+                      - button "Excluir" [ref=e221] [cursor=pointer]:
+                        - img [ref=e222]
+                - row "Lucas Ferreira 1º Ano EM Português Interpretação de texto avulsa 01/02/2026, 10:16 Agendado" [ref=e225]:
+                  - cell "Lucas Ferreira 1º Ano EM" [ref=e226]:
+                    - generic [ref=e227]: Lucas Ferreira
+                    - generic [ref=e228]: 1º Ano EM
+                  - cell "Português" [ref=e229]
+                  - cell "Interpretação de texto" [ref=e230]
+                  - cell "avulsa" [ref=e231]
+                  - cell "01/02/2026, 10:16" [ref=e232]
+                  - cell "Agendado" [ref=e233]:
+                    - generic [ref=e234]: Agendado
+                  - cell [ref=e235]:
+                    - generic [ref=e236]:
+                      - button "Marcar como concluído" [ref=e237] [cursor=pointer]:
+                        - img [ref=e238]
+                      - generic [ref=e241]:
+                        - button "Avaliar Desempenho" [ref=e242] [cursor=pointer]:
+                          - img [ref=e243]
+                        - button "Ver Histórico do Dia" [ref=e247] [cursor=pointer]:
+                          - img [ref=e248]
+                      - button "Editar" [ref=e250] [cursor=pointer]:
+                        - img [ref=e251]
+                      - button "Excluir" [ref=e254] [cursor=pointer]:
+                        - img [ref=e255]
+        - generic [ref=e259]:
+          - generic [ref=e260]:
+            - generic [ref=e261]:
+              - heading "Novo Reforço" [level=3] [ref=e262]
+              - paragraph [ref=e263]: Preencha as informações nas abas abaixo
+            - button [ref=e264] [cursor=pointer]:
+              - img [ref=e265]
+          - generic [ref=e268]:
+            - generic [ref=e269]:
+              - button "Dados da Aula" [ref=e270] [cursor=pointer]:
+                - img [ref=e271]
+                - text: Dados da Aula
+              - button "Agendamento" [ref=e273] [cursor=pointer]:
+                - img [ref=e275]
+                - text: Agendamento
+            - generic [ref=e283]:
+              - generic [ref=e284]: Data e Hora da Aula *
+              - textbox "Selecione a data e hora" [ref=e288]
+              - paragraph [ref=e289]: Data e hora são obrigatórias
+          - generic [ref=e290]:
+            - generic [ref=e291]: Passo 2 de 2
+            - generic [ref=e292]:
+              - button "Cancelar" [ref=e293] [cursor=pointer]
+              - button "Criar Reforço" [active] [ref=e294] [cursor=pointer]:
+                - img [ref=e295]
+                - text: Criar Reforço
+```

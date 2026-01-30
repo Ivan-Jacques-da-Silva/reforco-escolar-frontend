@@ -3,10 +3,12 @@ import { AlertTriangle } from 'lucide-react';
 
 const DeleteConfirmModal = ({ payment, loading, onConfirm, onCancel }) => {
   const formatCurrency = (value) => {
+    const num = Number(value);
+    if (value == null || !isFinite(num)) return '--';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(num);
   };
 
   return (

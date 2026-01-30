@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { prisma } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const upload = require('../config/upload');
 
 const router = express.Router();
 
@@ -88,10 +89,26 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Buscar usuário
-    const user = await prisma.user.findUnique({
+    // Buscar usuário (Teacher/Admin)
+    let user = await prisma.user.findUnique({
       where: { email }
     });
+    
+    let isStudent = false;
+
+    // Se não encontrou usuário, tentar buscar aluno
+    if (!user) {
+      const student = await prisma.student.findFirst({
+        where: { email }
+      });
+      
+      if (student && student.password) {
+        user = student;
+        isStudent = true;
+        // Adicionar role explicitamente se não existir
+        if (!user.role) user.role = 'STUDENT';
+      }
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -108,13 +125,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Gerar token JWT
+    // Gerar token JWT com nonce para garantir unicidade
+    const tokenPayload = { 
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      nonce: Date.now() + Math.random()
+    };
+    
+    if (isStudent) tokenPayload.isStudent = true;
+
     const token = jwt.sign(
-      { 
-        userId: user.id,
-        email: user.email,
-        role: user.role
-      },
+      tokenPayload,
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
@@ -124,12 +146,19 @@ router.post('/login', async (req, res) => {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias
 
     // Criar sessão no banco
+    const sessionData = {
+      token,
+      expiresAt
+    };
+
+    if (isStudent) {
+      sessionData.studentId = user.id;
+    } else {
+      sessionData.userId = user.id;
+    }
+
     const session = await prisma.session.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt
-      }
+      data: sessionData
     });
 
     // Remover senha da resposta
@@ -231,6 +260,144 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 
   } catch (error) {
     logger.error('Erro ao alterar senha:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Atualizar Perfil e Tema
+router.put('/profile', authenticateToken, upload.fields([{ name: 'avatar', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
+  try {
+    const { name, email, password, primaryColor, secondaryColor, fontFamily, textColor } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    logger.info('Profile update request', { 
+      userId, 
+      userRole, 
+      files: req.files ? Object.keys(req.files) : 'none',
+      body: req.body 
+    });
+
+    // Validar se o email já está em uso (se foi alterado)
+    if (email && email !== req.user.email) {
+      // Verificar na tabela de usuários (admins/professores)
+      const existingUser = await prisma.user.findUnique({
+        where: { email }
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          error: 'Este email já está em uso'
+        });
+      }
+
+      // Verificar na tabela de alunos (para evitar duplicidade global)
+      const existingStudent = await prisma.student.findFirst({
+        where: { email }
+      });
+
+      if (existingStudent) {
+        return res.status(400).json({
+          error: 'Este email já está em uso'
+        });
+      }
+    }
+
+    let updatedUser;
+
+    if (userRole === 'STUDENT') {
+      // Lógica de atualização para ESTUDANTES
+      const updateData = {};
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      
+      // Senha
+      if (password && password.trim() !== '') {
+        if (password.length < 6) {
+          return res.status(400).json({
+            error: 'A nova senha deve ter pelo menos 6 caracteres'
+          });
+        }
+        updateData.password = await bcrypt.hash(password, 12);
+      }
+
+      // Alunos agora têm avatar
+      if (req.files) {
+        if (req.files.avatar) updateData.avatarUrl = `/uploads/${req.files.avatar[0].filename}`;
+      }
+
+      updatedUser = await prisma.student.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          // Retornar campos para manter compatibilidade com o frontend
+          grade: true,
+          phone: true,
+          avatarUrl: true
+        }
+      });
+      
+      // Adicionar role explicitamente
+      updatedUser.role = 'STUDENT';
+
+    } else {
+      // Lógica de atualização para ADMINS/PROFESSORES (User)
+      const updateData = {};
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      if (primaryColor) updateData.primaryColor = primaryColor;
+      if (secondaryColor) updateData.secondaryColor = secondaryColor;
+      if (fontFamily) updateData.fontFamily = fontFamily;
+      if (textColor) updateData.textColor = textColor;
+      
+      // Handle files
+      if (req.files) {
+        if (req.files.avatar) updateData.avatarUrl = `/uploads/${req.files.avatar[0].filename}`;
+        if (req.files.logo) updateData.logoUrl = `/uploads/${req.files.logo[0].filename}`;
+      }
+
+      // Se a senha for fornecida, hash e atualiza
+      if (password && password.trim() !== '') {
+         if (password.length < 6) {
+          return res.status(400).json({
+            error: 'A nova senha deve ter pelo menos 6 caracteres'
+          });
+        }
+        updateData.password = await bcrypt.hash(password, 12);
+      }
+
+      updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          primaryColor: true,
+          secondaryColor: true,
+          fontFamily: true,
+          textColor: true,
+          avatarUrl: true,
+          logoUrl: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+    }
+
+    res.json({
+      message: 'Perfil atualizado com sucesso',
+      user: updatedUser
+    });
+
+  } catch (error) {
+    logger.error('Erro ao atualizar perfil:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

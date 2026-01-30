@@ -51,6 +51,30 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Estatísticas de materiais
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const totalItems = await prisma.material.count();
+    
+    const materials = await prisma.material.findMany({
+      select: { quantity: true, minimum: true }
+    });
+    
+    const lowStockCount = materials.filter(m => m.quantity <= m.minimum).length;
+    const totalStock = materials.reduce((acc, m) => acc + m.quantity, 0);
+
+    res.json({
+      totalItems,
+      totalStock,
+      lowStockCount
+    });
+
+  } catch (error) {
+    logger.error('Erro ao buscar estatísticas de materiais:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Buscar material por ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

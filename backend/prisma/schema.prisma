@@ -1,5 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema (UTF-8 clean)
 
 generator client {
   provider = "prisma-client-js"
@@ -7,80 +6,124 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
-// Modelo de Usuário (Professores/Administradores)
+// User model (Teachers/Admins)
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
   name      String?
   role      String   @default("TEACHER")
+  primaryColor   String?  @default("#0ea5e9")
+  secondaryColor String?  @default("#f8fafc")
+  fontFamily     String?  @default("Inter")
+  textColor      String?  @default("#1e293b")
+  avatarUrl      String?
+  logoUrl        String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relacionamentos
+  // Relations
   students  Student[]
   sessions  Session[]
 
   @@map("users")
 }
 
-// Modelo de Sessão para autenticação
+// Session model
 model Session {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String?
+  studentId String?
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  // Relacionamentos
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
-// Modelo de Aluno
+// Student model
 model Student {
   id          String   @id @default(cuid())
   name        String
   email       String?
+  password    String?  // Login password for student/parent portal
   phone       String?
-  grade       String   // Série escolar
+  grade       String   // School grade
+  avatarUrl   String?
+  // Optional extra fields
+  birthDate   DateTime?
+  school      String?
+  parentName  String?
+  parentPhone String?
+  parentEmail String?
+  address     String?
   status      String   @default("ACTIVE")
   monthlyFee  Float    @default(149.90)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relacionamentos
+  // Relations
   teacherId   String
   teacher     User @relation(fields: [teacherId], references: [id])
   tutorings   Tutoring[]
   payments    Payment[]
+  evaluations Evaluation[]
+  sessions    Session[]
 
   @@map("students")
 }
 
-// Modelo de Reforço/Aula
+// Tutoring model
 model Tutoring {
   id          String   @id @default(cuid())
   studentId   String
-  subject     String   // Disciplina
-  topic       String   // Assunto específico
-  plan        String   // Tipo de plano (pacote, avulsa)
+  subject     String   // Subject
+  topic       String   // Specific topic
+  plan        String   // Plan type (bundle, single)
   nextClass   DateTime?
   status      String   @default("SCHEDULED")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relacionamentos
+  // Relations
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  evaluations Evaluation[]
 
   @@map("tutorings")
 }
 
-// Modelo de Material
+// Evaluation model (Weekly Report)
+model Evaluation {
+  id          String   @id @default(cuid())
+  studentId   String
+  tutoringId  String?  // Optional link to specific tutoring
+  
+  weekDate    DateTime // Reference date (e.g. Monday of the week)
+  
+  behavior    String   // BOM, MEDIO, RUIM
+  participation String // BOM, MEDIO, RUIM
+  progress    String   // BOM, MEDIO, RUIM
+  
+  notes       String?  // Qualitative feedback
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  tutoring    Tutoring? @relation(fields: [tutoringId], references: [id], onDelete: SetNull)
+
+  @@map("evaluations")
+}
+
+// Material model
 model Material {
   id        String   @id @default(cuid())
   sku       String   @unique
@@ -93,11 +136,11 @@ model Material {
   @@map("materials")
 }
 
-// Modelo de Pagamento
+// Payment model
 model Payment {
   id          String   @id @default(cuid())
   studentId   String
-  reference   String   // Referência do pagamento (ex: "Mensalidade 09/2025")
+  reference   String   // Reference (e.g. "Mensalidade 09/2025")
   amount      Float
   status      String   @default("PENDING")
   gateway     String?  @default("CORA")
@@ -106,7 +149,7 @@ model Payment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relacionamentos
+  // Relations
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("payments")

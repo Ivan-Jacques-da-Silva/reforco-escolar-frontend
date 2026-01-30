@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import StudentsList from '../components/Students/StudentsList';
 import StudentForm from '../components/Students/StudentForm';
-import DeleteConfirmModal from '../components/Students/DeleteConfirmModal';
 import { useToast } from '../components/common/Toast';
+import { useModal } from '../contexts/ModalContext';
 import { studentsApi } from '../services/studentsApi';
+import { paymentsApi } from '../services/paymentsApi';
+import { Button } from '../components/ui/button';
 
-const Students = () => {
-  const { success, error, ToastContainer } = useToast();
+const Students = ({ embedded = false }) => {
+  const { success, error: toastError, ToastContainer } = useToast();
+  const { showModal } = useModal();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [globalError, setGlobalError] = useState('');
@@ -23,10 +26,7 @@ const Students = () => {
 
   // Estados dos modais
   const [showForm, setShowForm] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Carregar alunos
   const loadStudents = async (page = 1, newFilters = filters) => {
@@ -40,18 +40,19 @@ const Students = () => {
         ...newFilters
       });
 
-      setStudents(response.students);
+      setStudents(response.students || []);
+      const pg = response.pagination || {};
       setPagination({
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-        totalPages: response.totalPages
+        page: pg.page || 1,
+        limit: pg.limit || pagination.limit,
+        total: pg.total || 0,
+        totalPages: pg.pages || 0
       });
     } catch (err) {
       console.error('Erro ao carregar alunos:', err);
       const errorMessage = 'Erro ao carregar alunos. Tente novamente.';
       setGlobalError(errorMessage);
-      error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -80,29 +81,37 @@ const Students = () => {
   };
 
   // Abrir formulário para editar aluno
-  const handleEditStudent = (student) => {
-    setEditingStudent(student);
-    setShowForm(true);
+  const handleEditStudent = async (student) => {
+    try {
+      // Carregar dados completos do aluno (incluindo pagamentos)
+      const fullStudent = await studentsApi.getById(student.id);
+      setEditingStudent(fullStudent);
+      setShowForm(true);
+    } catch (error) {
+      console.error('Erro ao carregar detalhes do aluno:', error);
+      toastError('Erro ao carregar detalhes do aluno');
+    }
   };
 
   // Abrir modal de confirmação de exclusão
   const handleDeleteStudent = (student) => {
-    setSelectedStudent(student);
-    setShowDeleteModal(true);
+    showModal({
+      title: 'Confirmar Exclusão',
+      message: `Tem certeza que deseja excluir o aluno: ${student.name}? Esta ação não pode ser desfeita.`,
+      type: 'confirm',
+      confirmLabel: 'Excluir',
+      buttonVariant: 'destructive',
+      onConfirm: () => handleConfirmDelete(student.id)
+    });
   };
 
   // Confirmar exclusão
   const handleConfirmDelete = async (studentId) => {
     try {
-      setDeleteLoading(true);
       await studentsApi.delete(studentId);
       
       // Recarregar lista
       await loadStudents(pagination.page);
-      
-      // Fechar modal
-      setShowDeleteModal(false);
-      setSelectedStudent(null);
       
       // Mostrar mensagem de sucesso
       success('Aluno excluído com sucesso');
@@ -110,9 +119,8 @@ const Students = () => {
       console.error('Erro ao excluir aluno:', err);
       const errorMessage = 'Erro ao excluir aluno. Tente novamente.';
       setGlobalError(errorMessage);
-      error(errorMessage);
-    } finally {
-      setDeleteLoading(false);
+      toastError(errorMessage);
+      throw err;
     }
   };
 
@@ -125,6 +133,10 @@ const Students = () => {
         success('Aluno atualizado com sucesso');
       } else {
         // Criar novo aluno
+        // Separar dados financeiros dos dados do aluno
+        const { financialType, amount, installments, dueDateDay, ...studentInfo } = studentData;
+        
+        // Passar tudo para a API, pois o backend agora lida com a criação dos pagamentos
         await studentsApi.create(studentData);
         success('Aluno criado com sucesso');
       }
@@ -140,44 +152,36 @@ const Students = () => {
       const errorMessage = editingStudent 
         ? 'Erro ao atualizar aluno. Tente novamente.'
         : 'Erro ao criar aluno. Tente novamente.';
-      error(errorMessage);
+      toastError(errorMessage);
       throw err; // Re-throw para que o formulário possa tratar
     }
   };
 
-  // Cancelar operações
-  const handleCancel = () => {
-    setShowForm(false);
-    setShowDeleteModal(false);
-    setSelectedStudent(null);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Cabeçalho */}
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Alunos</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Gerencie os alunos cadastrados no sistema
-              </p>
+    <div className={embedded ? "" : "min-h-screen bg-gray-50"}>
+      <div className={embedded ? "" : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"}>
+        {/* Cabeçalho (oculto quando embutido no Dashboard) */}
+        {!embedded && (
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Alunos</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Gerencie os alunos cadastrados no sistema
+                </p>
+              </div>
+              <Button onClick={handleAddStudent} className="gap-2">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Novo Aluno
+              </Button>
             </div>
-            <button
-              onClick={handleAddStudent}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Novo Aluno
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Mensagem de erro global */}
-        {error && (
+        {globalError && (
           <div className="px-4 sm:px-0 mb-4">
             <div className="bg-red-50 border border-red-200 rounded-md p-4">
               <div className="flex">
@@ -187,11 +191,11 @@ const Students = () => {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600">{error}</p>
+                  <p className="text-sm text-red-600">{globalError}</p>
                 </div>
                 <div className="ml-auto pl-3">
                   <button
-                    onClick={() => setError('')}
+                    onClick={() => setGlobalError('')}
                     className="text-red-400 hover:text-red-600"
                   >
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,19 +208,31 @@ const Students = () => {
           </div>
         )}
 
+        {/* Ações rápidas (quando embutido no painel) */}
+        {embedded && (
+          <div className="px-4 sm:px-0 mb-4 flex justify-end">
+            <Button onClick={handleAddStudent} className="gap-2">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Novo Aluno
+            </Button>
+          </div>
+        )}
+
         {/* Lista de alunos */}
-        <div className="px-4 sm:px-0">
+        <div className={embedded ? "" : "px-4 sm:px-0"}>
           <StudentsList
-          students={students}
-          loading={loading}
-          error={globalError}
-          pagination={pagination}
-          filters={filters}
-          onPageChange={handlePageChange}
-          onFiltersChange={handleFiltersChange}
-          onEdit={handleEditStudent}
-          onDelete={handleDeleteStudent}
-        />
+            students={students}
+            loading={loading}
+            error={globalError}
+            pagination={pagination}
+            filters={filters}
+            onPageChange={handlePageChange}
+            onFiltersChange={handleFiltersChange}
+            onEdit={handleEditStudent}
+            onDelete={handleDeleteStudent}
+          />
         </div>
       </div>
 
@@ -229,19 +245,7 @@ const Students = () => {
             setShowForm(false);
             setEditingStudent(null);
           }}
-        />
-      )}
-
-      {/* Modal de confirmação de exclusão */}
-      {showDeleteModal && selectedStudent && (
-        <DeleteConfirmModal
-          student={selectedStudent}
-          loading={deleteLoading}
-          onConfirm={() => handleConfirmDelete(selectedStudent.id)}
-          onCancel={() => {
-            setShowDeleteModal(false);
-            setSelectedStudent(null);
-          }}
+          isOpen={showForm}
         />
       )}
 

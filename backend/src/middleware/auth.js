@@ -24,7 +24,23 @@ const authenticateToken = async (req, res, next) => {
             id: true,
             email: true,
             name: true,
-            role: true
+            role: true,
+            primaryColor: true,
+            secondaryColor: true,
+            avatarUrl: true,
+            logoUrl: true,
+            updatedAt: true
+          }
+        },
+        student: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            grade: true,
+            avatarUrl: true,
+            updatedAt: true
+            // Adicionar outros campos necessários
           }
         }
       }
@@ -42,13 +58,28 @@ const authenticateToken = async (req, res, next) => {
         where: { id: session.id }
       });
       
-      logger.info('Sessão expirada removida', { sessionId: session.id, userId: session.user.id });
+      const userId = session.user ? session.user.id : (session.student ? session.student.id : 'unknown');
+      logger.info('Sessão expirada removida', { sessionId: session.id, userId });
       return res.status(401).json({
         error: 'Sessão expirada'
       });
     }
 
-    req.user = session.user;
+    if (session.user) {
+      req.user = session.user;
+    } else if (session.student) {
+      // logger.info('Session student found', { studentId: session.student.id, hasAvatar: !!session.student.avatarUrl });
+      req.user = {
+        ...session.student,
+        role: 'STUDENT'
+      };
+    } else {
+      // Caso raro onde a sessão existe mas não tem user nem student associado
+      return res.status(401).json({
+        error: 'Sessão inválida (usuário não encontrado)'
+      });
+    }
+    
     req.sessionId = session.id;
     
     next();
@@ -103,6 +134,16 @@ const canAccessStudent = async (req, res, next) => {
 
     if (req.user.role === 'ADMIN') {
       return next();
+    }
+
+    // Se for aluno, só pode acessar seus próprios dados
+    if (req.user.role === 'STUDENT') {
+      if (studentId === req.user.id) {
+        return next();
+      }
+      return res.status(403).json({
+        error: 'Acesso negado. Você só pode acessar seus próprios dados.'
+      });
     }
 
     const student = await prisma.student.findUnique({

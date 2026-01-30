@@ -1,12 +1,12 @@
 import React from 'react'
 
 export function Button({ className = '', variant = 'default', size = 'md', children, ...props }) {
-  const base = 'inline-flex items-center justify-center gap-1 font-medium transition rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-300 disabled:opacity-50 disabled:pointer-events-none'
+  const base = 'inline-flex items-center justify-center gap-1 font-medium transition rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50 disabled:pointer-events-none'
   const variants = {
-    default: 'bg-sky-500 hover:bg-sky-600 text-white',
-    outline: 'border bg-white hover:bg-slate-50',
+    default: 'bg-[var(--primary-color)] hover:bg-[var(--primary-color-hover)] text-white',
+    outline: 'border border-[var(--primary-color)] text-[var(--primary-color)] bg-white hover:bg-slate-50',
     ghost: 'hover:bg-slate-100',
-    link: 'underline-offset-4 hover:underline',
+    link: 'text-[var(--primary-color)] underline-offset-4 hover:underline',
     secondary: 'bg-slate-100 hover:bg-slate-200'
   }
   const sizes = {

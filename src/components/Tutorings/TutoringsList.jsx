@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, CheckCircle, Calendar } from 'lucide-react';
+import { Edit, Trash2, CheckCircle, Calendar, ClipboardCheck } from 'lucide-react';
 
 const TutoringsList = ({
   tutorings,
@@ -11,7 +11,9 @@ const TutoringsList = ({
   onFiltersChange,
   onEdit,
   onDelete,
-  onComplete
+  onComplete,
+  onEvaluate,
+  onViewDailyEvaluations
 }) => {
   const handleSearchChange = (e) => {
     onFiltersChange({ ...filters, search: e.target.value });
@@ -105,7 +107,7 @@ const TutoringsList = ({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -169,6 +171,26 @@ const TutoringsList = ({
                             <CheckCircle className="h-5 w-5" />
                           </button>
                         )}
+                        {onEvaluate && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => onEvaluate(tutoring)}
+                              className="text-yellow-600 hover:text-yellow-900"
+                              title="Avaliar Desempenho"
+                            >
+                              <ClipboardCheck className="h-5 w-5" />
+                            </button>
+                            {onViewDailyEvaluations && (
+                              <button
+                                onClick={() => onViewDailyEvaluations()}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Ver Histórico do Dia"
+                              >
+                                <Calendar className="h-5 w-5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <button
                           onClick={() => onEdit(tutoring)}
                           className="text-blue-600 hover:text-blue-900"
@@ -189,6 +211,70 @@ const TutoringsList = ({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden">
+            <ul className="divide-y divide-gray-200">
+              {tutorings.map((tutoring) => (
+                <li key={tutoring.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0 mr-4">
+                        <p className="text-lg font-semibold text-gray-900 truncate">{tutoring.student?.name || 'N/A'}</p>
+                        <p className="text-sm text-gray-600">{tutoring.student?.grade || ''}</p>
+                      </div>
+                      {getStatusBadge(tutoring.status)}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-500 text-xs block uppercase tracking-wider mb-1">Disciplina</span>
+                        <span className="font-medium text-gray-900">{tutoring.subject}</span>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-500 text-xs block uppercase tracking-wider mb-1">Assunto</span>
+                        <span className="font-medium text-gray-900 truncate block" title={tutoring.topic}>{tutoring.topic}</span>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-500 text-xs block uppercase tracking-wider mb-1">Plano</span>
+                        <span className="font-medium text-gray-900">{tutoring.plan}</span>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-500 text-xs block uppercase tracking-wider mb-1">Próx. Aula</span>
+                        <span className="font-medium text-gray-900">{formatDateTime(tutoring.nextClass)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-gray-100">
+                      {tutoring.status === 'SCHEDULED' && onComplete && (
+                        <button onClick={() => onComplete(tutoring)} className="text-green-600 hover:text-green-900 p-2 bg-green-50 rounded-full" title="Concluir">
+                          <CheckCircle className="h-5 w-5" />
+                        </button>
+                      )}
+                      {onEvaluate && (
+                        <>
+                          <button onClick={() => onEvaluate(tutoring)} className="text-yellow-600 hover:text-yellow-900 p-2 bg-yellow-50 rounded-full" title="Avaliar">
+                            <ClipboardCheck className="h-5 w-5" />
+                          </button>
+                          {onViewDailyEvaluations && (
+                            <button onClick={() => onViewDailyEvaluations()} className="text-blue-600 hover:text-blue-900 p-2 bg-blue-50 rounded-full" title="Histórico">
+                              <Calendar className="h-5 w-5" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button onClick={() => onEdit(tutoring)} className="text-blue-600 hover:text-blue-900 p-2 bg-gray-100 rounded-full" title="Editar">
+                        <Edit className="h-5 w-5" />
+                      </button>
+                      <button onClick={() => onDelete(tutoring)} className="text-red-600 hover:text-red-900 p-2 bg-red-50 rounded-full" title="Excluir">
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {pagination.totalPages > 1 && (

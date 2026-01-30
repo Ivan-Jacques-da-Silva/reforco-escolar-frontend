@@ -14,8 +14,10 @@ router.get('/', authenticateToken, async (req, res) => {
     // Construir filtros
     const where = {};
     
-    // Se não for admin, filtrar apenas reforços dos alunos do professor
-    if (req.user.role !== 'ADMIN') {
+    // Se não for admin, filtrar adequadamente
+    if (req.user.role === 'STUDENT') {
+      where.studentId = req.user.id;
+    } else if (req.user.role !== 'ADMIN') {
       where.student = {
         teacherId: req.user.id
       };
@@ -81,6 +83,45 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Estatísticas de reforços
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    const where = {};
+    if (req.user.role === 'STUDENT') {
+      where.studentId = req.user.id;
+    } else if (req.user.role !== 'ADMIN') {
+      where.student = { teacherId: req.user.id };
+    }
+
+    const [total, scheduled, completed, canceled] = await Promise.all([
+      prisma.tutoring.count({ where }),
+      prisma.tutoring.count({ where: { ...where, status: 'SCHEDULED' } }),
+      prisma.tutoring.count({ where: { ...where, status: 'COMPLETED' } }),
+      prisma.tutoring.count({ where: { ...where, status: 'CANCELED' } })
+    ]);
+
+    const bySubject = await prisma.tutoring.groupBy({
+      by: ['subject'],
+      where,
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 5
+    });
+
+    res.json({
+      total,
+      scheduled,
+      completed,
+      canceled,
+      bySubject: bySubject.map(s => ({ subject: s.subject, count: s._count.id }))
+    });
+
+  } catch (error) {
+    logger.error('Erro ao buscar estatísticas de reforços:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Buscar reforço por ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -113,7 +154,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 
     // Verificar se o usuário pode acessar este reforço
-    if (req.user.role !== 'ADMIN' && tutoring.student.teacher.id !== req.user.id) {
+    if (req.user.role === 'STUDENT') {
+      if (tutoring.studentId !== req.user.id) {
+        return res.status(403).json({ error: 'Acesso negado' });
+      }
+    } else if (req.user.role !== 'ADMIN' && tutoring.student.teacher.id !== req.user.id) {
       return res.status(403).json({
         error: 'Acesso negado'
       });

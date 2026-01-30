@@ -5,15 +5,17 @@ const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 require('dotenv').config();
 
+const path = require('path');
 const logger = require('./config/logger');
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/students');
 const tutoringRoutes = require('./routes/tutorings');
 const materialRoutes = require('./routes/materials');
 const paymentRoutes = require('./routes/payments');
+const evaluationRoutes = require('./routes/evaluations');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5057;
 
 // Configurar trust proxy para Replit
 app.set('trust proxy', 1);
@@ -28,29 +30,39 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms', 
 }));
 
 // Middlewares de segurança
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  message: {
-    error: 'Muitas tentativas. Tente novamente em 15 minutos.'
-  },
-  handler: (req, res) => {
-    logger.warn('Rate limit excedido', { ip: req.ip, path: req.path });
-    res.status(429).json({
-      error: 'Muitas tentativas. Tente novamente em 15 minutos.'
-    });
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-app.use(limiter);
 
 // CORS
+const envAllowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [
+  ...envAllowedOrigins,
+  'https://progressoescolar.com.br'
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || true,
+  origin: (origin, callback) => {
+    // Permite chamadas sem origin (ex.: curl, health checks)
+    if (!origin) return callback(null, true);
+
+    // Sempre permitir localhost em desenvolvimento
+    const isLocalhost = /^(http:\/\/|https:\/\/)localhost(:\d+)?$/.test(origin);
+    if (isLocalhost) return callback(null, true);
+
+    if (allowedOrigins.length === 0) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: origem não permitida: ${origin}`));
+  },
   credentials: true
 }));
 
@@ -58,12 +70,26 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Servir arquivos estáticos (uploads)
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads'), {
+  setHeaders: (res, path, stat) => {
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Access-Control-Allow-Origin', '*');
+  }
+}));
+
+// Fallback para arquivos estáticos não encontrados (evita ORB error)
+app.use('/uploads', (req, res) => {
+  res.status(404).end();
+});
+
 // Rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/tutorings', tutoringRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {

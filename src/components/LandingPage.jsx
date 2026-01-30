@@ -85,10 +85,11 @@ const LandingPage = () => {
           >
             <motion.h1 
               variants={fadeInUp}
-              className="text-5xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight"
+              className="text-5xl md:text-6xl text-gray-800 mb-6 leading-tight"
+              style={{ fontFamily: "'Caveat', cursive", fontWeight: 'normal' }}
             >
-              Transforme o Futuro com
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"> Reforço Escolar</span>
+              Gerencie alunos, reforços e finanças com
+              <span className="text-blue-600"> Leveza</span>
             </motion.h1>
             
             <motion.p 
